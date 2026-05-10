@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
+<title>PS2 Style UI</title>
+
+<link rel="preload" href="https://www.spriters-resource.com/resources/sheets/208/208162.png?updated=1669174467" as="image">
+<style>
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+}
+
+body{
+  overflow:hidden;
+  background:black;
+  font-family:'PS2Font', Arial, sans-serif;
+  color:white;
+}
+
+/* Background looping MP4 */
+#bgVideo{
+  position:fixed;
+  top:45%;
+  left:30%;
+  transform:translate(-50%,-50%);
+  width:150vh;
+  opacity:0.9;
+  pointer-events:none;
+}
+
+/* White line */
+.bottomLine{
+  position:fixed;
+  bottom:10vh;
+  left:0;
+  width:100%;
+  height:2px;
+  background:white;
+  box-shadow:0 0 12px white;
+}
+
+/* =========================
+   MENU
+========================= */
+
+.menu{
+  position:fixed;
+  right:16vw;
+  top:42%;
+  transform:translateY(-50%);
+  display:flex;
+  flex-direction:column;
+  gap:5px;
+  z-index:10;
+}
+
+.menuItem{
+  font-size:6vh;
+  letter-spacing:2px;
+  color:rgba(255,255,255,0.45);
+
+  font-family:'PS2Font', Arial, sans-serif;
+
+  text-shadow:
+    0 0 8px rgba(255,255,255,0.2);
+
+  transition:
+    color 0.2s ease,
+    transform 0.2s ease,
+    text-shadow 0.2s ease;
+
+  user-select:none;
+
+  text-transform:uppercase;
+
+  position:relative;
+}
+
+/* Disabled Browser */
+.menuItem.disabled{
+  opacity:0.22;
+
+  color:#cfcfcf;
+
+  text-shadow:
+    0 0 3px rgba(255,255,255,0.08);
+
+  filter:blur(0.3px);
+}
+
+/* Selected */
+.menuItem.selected{
+  color:#6fe8ff;
+
+  text-shadow:
+    0 0 4px #6fe8ff,
+    0 0 10px #6fe8ff,
+    0 0 24px #6fe8ff;
+
+  transform:
+    translateX(-10px)
+    scale(1.02);
+}
+
+/* Selection arrow */
+.menuItem.selected::before{
+  content:"";
+  position:absolute;
+  left:-30px;
+  color:#6fe8ff;
+  text-shadow:
+    0 0 8px #6fe8ff,
+    0 0 20px #6fe8ff;
+}
+
+/* Bottom-right controls */
+.controls{
+  position:fixed;
+  right:30px;
+  bottom:calc(12vh - 75px);
+
+  display:flex;
+  gap:75px;
+
+  align-items:flex-start;
+}
+
+/* Each button row */
+.controlItem{
+  display:flex;
+  align-items:center;
+  gap:12px;
+
+  transition:0.2s;
+}
+
+.controlItem:hover{
+  transform:translateX(-4px);
+}
+
+/* Button image */
+.controlItem img{
+  width:7vh;
+  cursor:pointer;
+
+  filter:
+    drop-shadow(0 0 5px rgb(0, 0, 0))
+    drop-shadow(0 0 12px rgb(104, 104, 104));
+}
+
+/* Text */
+.controlText{
+  font-size:20px;
+  color:white;
+  text-shadow:
+    0 0 6px white,
+    0 0 12px white;
+}
+
+@font-face{
+  font-family:'PS2Font';
+  src:url('https://cdn.jsdelivr.net/gh/UncopylockDomainHere/psps/assets/font/ps2p.ttf') format('truetype');
+}
+
+/* PS2 bitmap font */
+.ps2Text{
+  font-family: Arial, sans-serif; /* fallback */
+  display:inline-block;
+  color:transparent;
+
+  background-image:
+    url('https://www.spriters-resource.com/media/assets/205/208162.png?updated=1756595785');
+
+  background-repeat:no-repeat;
+  background-size:256px 512px;
+
+  image-rendering:pixelated;
+}
+</style>
+</head>
+
+<body>
+
+<!-- Background Video -->
+<video
+  id="bgVideo"
+  autoplay
+  muted
+  loop
+  playsinline
+>
+  <source src="https://cdn.jsdelivr.net/gh/UncopylockDomainHere/psps/assets/menu/rings.mp4" type="video/mp4">
+</video>
+
+<!-- Right-side Menu -->
+<div class="menu">
+  <div class="menuItem disabled">
+    Browser
+  </div>
+
+  <div class="menuItem selected" id="gamesBtn">
+    Games
+  </div>
+</div>
+
+<!-- White line -->
+<div class="bottomLine"></div>
+
+<!-- Bottom-right PS2 controls -->
+<div class="controls">
+
+  <!-- X -->
+  <div class="controlItem" id="enterBtn">
+    <img src="https://cdn.jsdelivr.net/gh/UncopylockDomainHere/psps/assets/button/x.png">
+    <div class="controlText">Enter</div>
+  </div>
+
+  <!-- Circle -->
+  <div class="controlItem">
+    <img src="https://cdn.jsdelivr.net/gh/UncopylockDomainHere/psps/assets/button/circle.png">
+    <div class="controlText">Back</div>
+  </div>
+
+  <!-- Triangle -->
+  <div class="controlItem">
+    <img src="https://cdn.jsdelivr.net/gh/UncopylockDomainHere/psps/assets/button/triangle.png">
+    <div class="controlText">Options</div>
+  </div>
+
+</div>
+
+<script>
+const menu = document.querySelector(".menu");
+
+const mainMenuItems = [...document.querySelectorAll(".menuItem")];
+const selectableMainItems = mainMenuItems.filter(
+  item => !item.classList.contains("disabled")
+);
+
+let selectedIndex = 0;
+
+/* =========================
+   SOUNDS
+========================= */
+
+const navSound = new Audio(
+  "http://cdn.jsdelivr.net/gh/UncopylockDomainHere/psps/assets/sounds/nav.wav"
+);
+
+const selectSound = new Audio(
+  "http://cdn.jsdelivr.net/gh/UncopylockDomainHere/psps/assets/sounds/select.wav"
+);
+
+const backSound = new Audio(
+  "http://cdn.jsdelivr.net/gh/UncopylockDomainHere/psps/assets/sounds/back.wav"
+);
+
+function playSound(sound) {
+  sound.currentTime = 0;
+  sound.play();
+}
+
+/* =========================
+   SUB MENU
+========================= */
+
+const subMenu = document.createElement("div");
+subMenu.className = "menu";
+subMenu.style.display = "none";
+
+subMenu.innerHTML = `
+  <div class="menuItem selected" data-link="https://cdn.jsdelivr.net/gh/UncopylockDomainHere/psps/test1.html">
+    testing1
+  </div>
+
+  <div class="menuItem" data-link="https://cdn.jsdelivr.net/gh/UncopylockDomainHere/psps/test2.html">
+    testing2
+  </div>
+
+  <div class="menuItem" data-link="https://cdn.jsdelivr.net/gh/UncopylockDomainHere/psps/test3.html">
+    testing3
+  </div>
+`;
+
+document.body.appendChild(subMenu);
+
+const subMenuItems = [...subMenu.querySelectorAll(".menuItem")];
+
+let subSelectedIndex = 0;
+let inSubMenu = false;
+
+/* =========================
+   MAIN MENU
+========================= */
+
+function updateMainSelection() {
+  selectableMainItems.forEach(item => {
+    item.classList.remove("selected");
+  });
+
+  selectableMainItems[selectedIndex].classList.add("selected");
+}
+
+function moveMainSelection(direction) {
+  selectedIndex += direction;
+
+  if (selectedIndex < 0) {
+    selectedIndex = selectableMainItems.length - 1;
+  }
+
+  if (selectedIndex >= selectableMainItems.length) {
+    selectedIndex = 0;
+  }
+
+  playSound(navSound);
+
+  updateMainSelection();
+}
+
+/* =========================
+   SUB MENU
+========================= */
+
+function updateSubSelection() {
+  subMenuItems.forEach(item => {
+    item.classList.remove("selected");
+  });
+
+  subMenuItems[subSelectedIndex].classList.add("selected");
+}
+
+function moveSubSelection(direction) {
+  subSelectedIndex += direction;
+
+  if (subSelectedIndex < 0) {
+    subSelectedIndex = subMenuItems.length - 1;
+  }
+
+  if (subSelectedIndex >= subMenuItems.length) {
+    subSelectedIndex = 0;
+  }
+
+  playSound(navSound);
+
+  updateSubSelection();
+}
+
+function openSubMenu() {
+  playSound(selectSound);
+
+  menu.style.display = "none";
+
+  subMenu.style.display = "flex";
+
+  inSubMenu = true;
+
+  subSelectedIndex = 0;
+
+  updateSubSelection();
+}
+
+function closeSubMenu() {
+  playSound(backSound);
+
+  subMenu.style.display = "none";
+
+  menu.style.display = "flex";
+
+  inSubMenu = false;
+
+  updateMainSelection();
+}
+
+function launchSelectedItem() {
+  playSound(selectSound);
+
+  const selectedItem = subMenuItems[subSelectedIndex];
+
+  const htmlLink = selectedItem.dataset.link;
+
+  document.body.innerHTML = "";
+
+  const iframe = document.createElement("iframe");
+
+  iframe.src = htmlLink;
+
+  iframe.style.position = "fixed";
+  iframe.style.top = "0";
+  iframe.style.left = "0";
+  iframe.style.width = "100%";
+  iframe.style.height = "100%";
+  iframe.style.border = "none";
+  iframe.style.background = "black";
+  iframe.style.zIndex = "999999";
+
+  document.body.appendChild(iframe);
+}
+
+/* =========================
+   ENTER ACTION
+========================= */
+
+function activateSelection() {
+
+  if (!inSubMenu) {
+
+    const selected = selectableMainItems[selectedIndex];
+
+    if (selected.id === "gamesBtn") {
+      openSubMenu();
+    }
+
+  } else {
+
+    launchSelectedItem();
+
+  }
+}
+
+/* =========================
+   KEYBOARD
+========================= */
+
+document.addEventListener("keydown", e => {
+
+  if (!inSubMenu) {
+
+    if (e.key === "ArrowUp") {
+      moveMainSelection(-1);
+    }
+
+    if (e.key === "ArrowDown") {
+      moveMainSelection(1);
+    }
+
+    if (e.key === "Enter") {
+      activateSelection();
+    }
+
+  } else {
+
+    if (e.key === "ArrowUp") {
+      moveSubSelection(-1);
+    }
+
+    if (e.key === "ArrowDown") {
+      moveSubSelection(1);
+    }
+
+    if (e.key === "Enter") {
+      activateSelection();
+    }
+
+    if (e.key === "Escape" || e.key === "Backspace") {
+      closeSubMenu();
+    }
+
+  }
+
+});
+
+/* =========================
+   X BUTTON
+========================= */
+
+document.getElementById("enterBtn")
+.addEventListener("click", activateSelection);
+</script>
+
+</body>
+</html>
